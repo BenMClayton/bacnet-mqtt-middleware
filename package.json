@@ -17,6 +17,7 @@
   "homepage": "https://github.com/BenMClayton/bacnet-mqtt-middleware#readme",
   "dependencies": {
     "bacstack": "^0.0.1-beta.14",
+    "mqtt": "^5.10.4",
     "node-red-contrib-bacnet": "^0.3.0",
     "node-red-contrib-modbus": "^5.43.0"
   },

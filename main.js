@@ -1,4 +1,6 @@
 const Bacnet = require('bacstack');
+const mqtt = require('mqtt');
+const mosquittoClient = mqtt.connect('mqtt://192.168.1.123:1883');
 
 const client = new Bacnet({
   apduTimeout: 10000,
@@ -14,6 +16,19 @@ const OBJECT_TYPE_NAMES = {
   5: 'BINARY_VALUE',
   8: 'DEVICE'
 };
+
+mosquittoClient.on('connect', () => {
+  mosquittoClient.subscribe("zigbee2mqtt/#", (err) => {
+    if (err) {
+      console.error(err);
+    }
+  });
+});
+
+mosquittoClient.on('message', (topic, message) => {
+  if(topic.startsWith("zigbee2mqtt/0x"))
+    console.log(`Received message on topic ${topic}: ${message}`);
+});
 
 function getObjectTypeName(typeId) {
   return OBJECT_TYPE_NAMES[typeId] || `UnknownObjectType(${typeId})`;
