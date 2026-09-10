@@ -1,11 +1,22 @@
 const Bacnet = require('bacstack');
 const mqtt = require('mqtt');
-const mosquittoClient = mqtt.connect('mqtt://192.168.1.123:1883');
 
-const client = new Bacnet({
-  apduTimeout: 10000,
-  interface: '192.168.1.105'
-});
+const mqttUrl = process.env.MQTT_URL || 'mqtt://localhost:1883';
+const mqttTopic = process.env.MQTT_TOPIC || 'zigbee2mqtt/#';
+const bacnetInterface = process.env.BACNET_INTERFACE || undefined;
+const apduTimeout = Number.parseInt(process.env.BACNET_APDU_TIMEOUT || '10000', 10);
+
+if (!Number.isFinite(apduTimeout) || apduTimeout <= 0) {
+  throw new Error('BACNET_APDU_TIMEOUT must be a positive integer');
+}
+
+const bacnetOptions = { apduTimeout };
+if (bacnetInterface) {
+  bacnetOptions.interface = bacnetInterface;
+}
+
+const client = new Bacnet(bacnetOptions);
+const mosquittoClient = mqtt.connect(mqttUrl);
 
 const OBJECT_TYPE_NAMES = {
   0: 'ANALOG_INPUT',
@@ -18,16 +29,24 @@ const OBJECT_TYPE_NAMES = {
 };
 
 mosquittoClient.on('connect', () => {
-  mosquittoClient.subscribe("zigbee2mqtt/#", (err) => {
+  console.log(`Connected to MQTT broker at ${mqttUrl}`);
+  mosquittoClient.subscribe(mqttTopic, (err) => {
     if (err) {
-      console.error(err);
+      console.error(`Could not subscribe to ${mqttTopic}:`, err.message);
+      return;
     }
+    console.log(`Subscribed to ${mqttTopic}`);
   });
 });
 
+mosquittoClient.on('error', (error) => {
+  console.error('MQTT error:', error.message);
+});
+
 mosquittoClient.on('message', (topic, message) => {
-  if(topic.startsWith("zigbee2mqtt/0x"))
+  if (topic.startsWith('zigbee2mqtt/0x')) {
     console.log(`Received message on topic ${topic}: ${message}`);
+  }
 });
 
 function getObjectTypeName(typeId) {
@@ -38,6 +57,11 @@ function getObjectTypeName(typeId) {
 function readPropertiesOneByOne(address, objectId, propertyIds, callback) {
   const results = {};
   let remaining = propertyIds.length;
+
+  if (remaining === 0) {
+    callback(null, results);
+    return;
+  }
 
   propertyIds.forEach((propId) => {
     client.readProperty(address, objectId, propId, (err, value) => {
@@ -111,8 +135,8 @@ client.on('iAm', (device) => {
           }
 
           // Extract the values
-          const objectName = values[Bacnet.enum.PropertyIdentifier.OBJECT_NAME] || 'Unknown';
-          const description = values[Bacnet.enum.PropertyIdentifier.DESCRIPTION] || 'N/A';
+          const objectName = values[Bacnet.enum.PropertyIdentifier.OBJECT_NAME] ?? 'Unknown';
+          const description = values[Bacnet.enum.PropertyIdentifier.DESCRIPTION] ?? 'N/A';
           const unitsCode = values[Bacnet.enum.PropertyIdentifier.UNITS];
           const presentValue = values[Bacnet.enum.PropertyIdentifier.PRESENT_VALUE];
 
@@ -138,3 +162,12 @@ client.on('iAm', (device) => {
 
 // Broadcast a Who-Is to discover devices
 client.whoIs();
+
+function shutdown(signal) {
+  console.log(`Received ${signal}; closing BACnet and MQTT clients.`);
+  client.close();
+  mosquittoClient.end(false, () => process.exit(0));
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

@@ -1,15 +1,17 @@
 {
   "name": "bacnet-mqtt-middleware",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A configurable BACnet/IP discovery bridge with MQTT telemetry monitoring and a local device simulator.",
+  "main": "main.js",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "check": "node --check main.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BenMClayton/bacnet-mqtt-middleware.git"
   },
-  "author": "",
+  "author": "Ben Clayton",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/BenMClayton/bacnet-mqtt-middleware/issues"
@@ -17,9 +19,6 @@
   "homepage": "https://github.com/BenMClayton/bacnet-mqtt-middleware#readme",
   "dependencies": {
     "bacstack": "^0.0.1-beta.14",
-    "mqtt": "^5.10.4",
-    "node-red-contrib-bacnet": "^0.3.0",
-    "node-red-contrib-modbus": "^5.43.0"
-  },
-  "description": ""
+    "mqtt": "^5.10.4"
+  }
 }

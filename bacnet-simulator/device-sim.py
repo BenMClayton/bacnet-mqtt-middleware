@@ -6,17 +6,15 @@ import signal
 import sys
 import argparse
 
-from bacpypes.consolelogging import ConfigArgumentParser
 from bacpypes.core import run, stop
 from bacpypes.app import BIPSimpleApplication
 from bacpypes.local.device import LocalDeviceObject
 from bacpypes.object import AnalogInputObject, AnalogValueObject
-from bacpypes.pdu import Address
 
 # Use standard argparse to avoid INI file complications.
 parser = argparse.ArgumentParser(description="Multi-Device BACnet Simulation")
-parser.add_argument("--ip", type=str, default="192.168.1.100",
-                    help="Local IP address for BACnet (must be valid on this machine)")
+parser.add_argument("--ip", type=str, default="0.0.0.0",
+                    help="Local address for BACnet (default: 0.0.0.0)")
 parser.add_argument("--port", type=int, default=47808,
                     help="BACnet/IP UDP port (default: 47808)")
 args = parser.parse_args()
